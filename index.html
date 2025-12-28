@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wakanda Tasks & Notes</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins,sans-serif}
+
+body{
+  background:linear-gradient(120deg,#0b0014,#2a003b,#000);
+  background-size:400% 400%;
+  animation:bgShift 15s ease infinite;
+  min-height:100vh;
+  color:white;
+}
+
+@keyframes bgShift{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+
+/* ===== NAVBAR ===== */
+.navbar{
+  position:fixed;
+  left:0;
+  top:0;
+  width:300px;
+  height:100vh;
+  background:rgba(0,0,0,.9);
+  box-shadow:0 0 30px rgba(170,0,255,.7);
+  padding:20px;
+  animation:navPop .7s ease;
+}
+
+@keyframes navPop{
+  from{transform:translateX(-100%) scale(.9);opacity:0}
+  to{transform:translateX(0) scale(1);opacity:1}
+}
+
+.navbar h2{
+  text-align:center;
+  color:#c77dff;
+  text-shadow:0 0 15px #7f2aff;
+  margin-bottom:20px;
+}
+
+.subject{
+  background:#14001e;
+  padding:12px;
+  border-radius:14px;
+  margin-bottom:10px;
+  cursor:pointer;
+  transition:.3s;
+}
+
+.subject:hover{
+  background:#7f2aff;
+  box-shadow:0 0 15px #7f2aff;
+}
+
+.notes-list{
+  display:none;
+  margin-top:10px;
+}
+
+.note{
+  background:#0e0016;
+  padding:8px;
+  border-radius:10px;
+  margin:6px 0;
+  font-size:14px;
+}
+
+/* ===== NAV TOGGLE BUTTON ===== */
+
+
+/* ===== NAVBAR CLOSE STATE ===== */
+.navbar.closed{
+  transform:translateX(-100%) scale(.9);
+  opacity:0;
+  pointer-events:none;
+}
+
+/* Smooth transition */
+.navbar{
+  transition:all .5s ease;
+}
+
+/* Expand main when navbar closed */
+.main{
+  transition:margin-left .5s ease;
+}
+
+.main.full{
+  margin-left:40px;
+}
+
+
+.note button{
+  margin-top:6px;
+  padding:5px 8px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.open{background:#00eaff}
+.delete{background:#ff3b3b;color:white}
+
+/* ===== MAIN ===== */
+.main{
+  margin-left:320px;
+  padding:40px;
+}
+
+.container{
+  width:420px;
+  background:rgba(0,0,0,.85);
+  border-radius:24px;
+  padding:25px;
+  box-shadow:0 0 30px rgba(170,0,255,.6);
+}
+
+h1{
+  text-align:center;
+  color:#c77dff;
+  text-shadow:0 0 20px #7f2aff;
+  margin-bottom:15px;
+}
+
+/* Inputs */
+input,button{
+  width:100%;
+  padding:10px;
+  margin:6px 0;
+  border-radius:10px;
+  border:none;
+}
+
+input{
+  background:black;
+  color:white;
+  border:1px solid #7f2aff;
+}
+
+button{
+  background:linear-gradient(135deg,#7f2aff,#00eaff);
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.datetime{display:flex;gap:8px}
+
+/* Tasks */
+ul{list-style:none;margin-top:15px}
+li{
+  background:#14001e;
+  padding:12px;
+  border-radius:14px;
+  margin-bottom:10px;
+}
+.completed{text-decoration:line-through;opacity:.5}
+.actions{display:flex;justify-content:space-between;margin-top:8px}
+.done{background:#7CFF7C}
+</style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+  <h2>📚 Study Notes</h2>
+
+
+  <div class="subject" onclick="toggleNotes('Maths')">📘 Maths
+    <div class="notes-list" id="Maths"></div>
+  </div>
+
+  <div class="subject" onclick="toggleNotes('CN')">💻 CN
+    <div class="notes-list" id="CN"></div>
+  </div>
+
+  <div class="subject" onclick="toggleNotes('IE')">🧠 IE
+    <div class="notes-list" id="IE"></div>
+  </div>
+
+  <hr style="margin:15px 0;border-color:#333">
+
+  <input type="file" id="pdfFile" accept="application/pdf">
+  <button onclick="savePDF()">Add Note</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="container">
+    <h1>🐾 Wakanda To-Do</h1>
+
+    <input id="task" placeholder="Task">
+    <div class="datetime">
+      <input type="date" id="date">
+      <input type="time" id="time">
+    </div>
+    <input id="reward" placeholder="Reward">
+    <button onclick="addTask()">Add Mission</button>
+
+    <ul id="taskList"></ul>
+  </div>
+</div>
+
+<script>
+/* ===== TODO ===== */
+let tasks=JSON.parse(localStorage.getItem("wakandaTasks"))||[];
+function saveTasks(){localStorage.setItem("wakandaTasks",JSON.stringify(tasks))}
+function renderTasks(){
+  taskList.innerHTML="";
+  tasks.forEach((t,i)=>{
+    let li=document.createElement("li");
+    if(t.done)li.classList.add("completed");
+    li.innerHTML=`🗡 ${t.task}<br>📅 ${t.date} ⏰ ${t.time}<br>🎁 ${t.reward}
+    <div class="actions">
+      <button class="done" onclick="toggleDone(${i})">Done</button>
+      <button class="delete" onclick="deleteTask(${i})">Delete</button>
+    </div>`;
+    taskList.appendChild(li);
+  });
+}
+function addTask(){
+  if(!task.value||!date.value||!time.value||!reward.value)return;
+  tasks.push({task:task.value,date:date.value,time:time.value,reward:reward.value,done:false});
+  saveTasks();renderTasks();
+  task.value=date.value=time.value=reward.value="";
+}
+function deleteTask(i){tasks.splice(i,1);saveTasks();renderTasks()}
+function toggleDone(i){tasks[i].done=!tasks[i].done;saveTasks();renderTasks()}
+renderTasks();
+
+/* ===== NOTES (NAVBAR) ===== */
+let db,currentSubject="Maths";
+let req=indexedDB.open("WakandaNotes",1);
+req.onupgradeneeded=e=>e.target.result.createObjectStore("pdfs",{keyPath:"id",autoIncrement:true});
+req.onsuccess=e=>{db=e.target.result;loadNotes()};
+
+function toggleNotes(sub){
+  document.querySelectorAll(".notes-list").forEach(n=>n.style.display="none");
+  document.getElementById(sub).style.display="block";
+  currentSubject=sub;
+}
+
+function savePDF(){
+  let f=pdfFile.files[0];
+  if(!f)return;
+  let r=new FileReader();
+  r.onload=()=>{
+    let tx=db.transaction("pdfs","readwrite");
+    tx.objectStore("pdfs").add({subject:currentSubject,name:f.name,data:r.result});
+    loadNotes();
+  };
+  r.readAsDataURL(f);
+}
+
+
+
+
+function loadNotes(){
+  ["Maths","CN","IE"].forEach(s=>document.getElementById(s).innerHTML="");
+  let tx=db.transaction("pdfs","readonly").objectStore("pdfs");
+  tx.openCursor().onsuccess=e=>{
+    let c=e.target.result;
+    if(c){
+      let p=c.value;
+      let box=document.getElementById(p.subject);
+      box.innerHTML+=`
+      <div class="note">
+        ${p.name}<br>
+        <button class="open" onclick="openPDF('${p.data}')">Open</button>
+        <button class="delete" onclick="deletePDF(${p.id})">Delete</button>
+      </div>`;
+      c.continue();
+    }
+  };
+}
+
+function openPDF(data){
+  let w=window.open();
+  w.document.write(`<iframe src="${data}" width="100%" height="100%"></iframe>`);
+}
+function deletePDF(id){
+  let tx=db.transaction("pdfs","readwrite");
+  tx.objectStore("pdfs").delete(id);
+  tx.oncomplete=loadNotes;
+}
+</script>
+
+</body>
+</html>
